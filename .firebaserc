@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "prod": "lesgood-a1df5",
+    "dev": "lesgood-dev",
+    "default": "lesgood-dev"
+  }
+}
