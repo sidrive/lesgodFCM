@@ -11,11 +11,11 @@ const functions = require('firebase-functions');
 // -------------------
 const generateThumbnail   	= require('./libs/images');
 const guruIndexing			= require('./libs/gurus')
-const ordering 				= require('./libs/orders')
+
 
 
 // EXPORT ALL FUNCTIONS
 // -------------------
 exports.generateThumbnail   	= functions.storage.object().onChange(generateThumbnail);
 exports.guruIndexing     		= functions.database.ref('/user-skills/{uid}/{code}').onWrite(guruIndexing);
-exports.ordering     			= functions.database.ref('/orders/{oid}').onWrite(ordering);
+
