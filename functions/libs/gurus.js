@@ -10,7 +10,7 @@ function guruIndexing(event){
 	const eventVal 	= event.data.val();
 	const code 		= event.params.code;
 	const uid 		= event.params.uid;
-	const price 	= eventVal.price;
+	
 	const rootRef   = event.data.adminRef.root;
 
 	if (event.data.exists()) {

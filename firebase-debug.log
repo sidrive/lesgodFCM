@@ -1,0 +1,68 @@
+[debug] [2017-11-07T12:32:54.632Z] ----------------------------------------------------------------------
+[debug] [2017-11-07T12:32:54.635Z] Command:       /usr/local/bin/node /usr/local/bin/firebase deploy
+[debug] [2017-11-07T12:32:54.635Z] CLI Version:   3.14.0
+[debug] [2017-11-07T12:32:54.635Z] Platform:      darwin
+[debug] [2017-11-07T12:32:54.635Z] Node Version:  v6.11.1
+[debug] [2017-11-07T12:32:54.636Z] Time:          Tue Nov 07 2017 19:32:54 GMT+0700 (WIB)
+[debug] [2017-11-07T12:32:54.636Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2017-11-07T12:32:54.650Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2017-11-07T12:32:54.650Z] > authorizing via signed-in user
+[debug] [2017-11-07T12:32:54.652Z] >>> HTTP REQUEST GET https://admin.firebase.com/v1/projects/devlesgood-1ccdc  
+ Tue Nov 07 2017 19:32:54 GMT+0700 (WIB)
+[debug] [2017-11-07T12:32:56.017Z] <<< HTTP RESPONSE 200
+[debug] [2017-11-07T12:32:56.018Z] >>> HTTP REQUEST GET https://admin.firebase.com/v1/database/devlesgood-1ccdc/tokens  
+ Tue Nov 07 2017 19:32:56 GMT+0700 (WIB)
+[debug] [2017-11-07T12:32:57.035Z] <<< HTTP RESPONSE 200
+[info] 3
+[info] 
+[info] === Deploying to 'devlesgood-1ccdc'...
+[info] 
+[info] i  deploying database, functions, hosting
+[info] i  database: checking rules syntax...
+[debug] [2017-11-07T12:32:59.103Z] >>> HTTP REQUEST PUT https://devlesgood-1ccdc.firebaseio.com/.settings/rules.json?dryRun=true {
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null"
+  }
+} 
+ Tue Nov 07 2017 19:32:59 GMT+0700 (WIB)
+[debug] [2017-11-07T12:33:00.150Z] <<< HTTP RESPONSE 200
+[info] ✔  database: rules syntax is valid
+[debug] [2017-11-07T12:33:00.155Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase serve --only functions",
+    "shell": "firebase experimental:functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^0.4.0",
+    "child-process-promise": "^2.2.0",
+    "firebase-admin": "~5.4.2",
+    "firebase-functions": "^0.7.2",
+    "mkdirp": "^0.5.1",
+    "mkdirp-promise": "^4.0.0",
+    "nodemailer": "^4.0.1"
+  },
+  "private": true
+}
+[info] i  functions: ensuring necessary APIs are enabled...
+[info] i  runtimeconfig: ensuring necessary APIs are enabled...
+[debug] [2017-11-07T12:33:00.157Z] >>> HTTP REQUEST GET https://servicemanagement.googleapis.com/v1/services/cloudfunctions.googleapis.com/projectSettings/devlesgood-1ccdc?view=CONSUMER_VIEW  
+ Tue Nov 07 2017 19:33:00 GMT+0700 (WIB)
+[debug] [2017-11-07T12:33:00.157Z] >>> HTTP REQUEST GET https://servicemanagement.googleapis.com/v1/services/runtimeconfig.googleapis.com/projectSettings/devlesgood-1ccdc?view=CONSUMER_VIEW  
+ Tue Nov 07 2017 19:33:00 GMT+0700 (WIB)
+[debug] [2017-11-07T12:33:01.683Z] <<< HTTP RESPONSE 200
+[info] ✔  functions: all necessary APIs are enabled
+[debug] [2017-11-07T12:33:01.707Z] <<< HTTP RESPONSE 200
+[info] ✔  runtimeconfig: all necessary APIs are enabled
+[debug] [2017-11-07T12:33:01.709Z] >>> HTTP REQUEST GET https://appengine.googleapis.com/v1/apps/devlesgood-1ccdc  
+ Tue Nov 07 2017 19:33:01 GMT+0700 (WIB)
+[debug] [2017-11-07T12:33:01.709Z] >>> HTTP REQUEST GET https://apikeys.googleapis.com/v1/projects/devlesgood-1ccdc/apiKeys  
+ Tue Nov 07 2017 19:33:01 GMT+0700 (WIB)
+[debug] [2017-11-07T12:33:03.091Z] <<< HTTP RESPONSE 200
+[debug] [2017-11-07T12:33:03.223Z] <<< HTTP RESPONSE 200
