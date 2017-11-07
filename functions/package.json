@@ -16,7 +16,6 @@
     "nodemailer": "^4.0.1",
     "@google-cloud/storage": "^0.4.0",
     "child-process-promise": "^2.2.0"
-
   },
   "private": true
 }
