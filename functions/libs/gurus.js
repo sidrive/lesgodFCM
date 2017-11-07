@@ -50,7 +50,7 @@ function deleteIndex(uid, code, rootRef){
 	    		return console.log("current totalSkill is 0");
 	    	}
 
-	    	let total = totalSkill+1
+	    	let total = totalSkill-1
 	    	ref.set(total);
 
 	    	console.log("totalSkill of "+uid+" updated to "+total);
