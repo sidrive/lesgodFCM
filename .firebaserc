@@ -2,6 +2,7 @@
   "projects": {
     "prod": "devlesgood-1ccdc",
     "dev": "devlesgood-1ccdc",
+    "dev-exp": "lesgood-dev-experiment",
     "default": "devlesgood-1ccdc"
   }
 }
