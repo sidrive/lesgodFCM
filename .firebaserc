@@ -2,6 +2,7 @@
   "projects": {
     "prod": "devlesgood-1ccdc",
     "dev": "devlesgood-1ccdc",
-    "default": "devlesgood-1ccdc"
+    "default": "devlesgood-1ccdc",
+    "develop": "devlesgood-1ccdc"
   }
 }
