@@ -121,3 +121,130 @@ exports.countSkillchange = functions.database.ref('user-skills/{uid}/{code}').on
     console.log('Total Skill updated.');
   });
 });
+
+
+
+// Functions to track sum of reviews
+///
+//
+exports.countReviewsChange = functions.database.ref('user-reviews/{uid}/reviews/{code}').onWrite(event => {
+  const collectionRef = event.data.adminRef.root;
+  const uid    = event.params.uid;
+  const countRef = collectionRef.child('users/'+uid+'/review');
+
+  // Return the promise from countRef.transaction() so our function 
+  // waits for this async event to complete before it exits.
+  return countRef.transaction(current => {
+    if (event.data.exists() && !event.data.previous.exists()) {
+      return (current || 0) + 1;
+    }
+    else if (!event.data.exists() && event.data.previous.exists()) {
+      return (current || 0) - 1;
+    }
+  }).then(() => {
+    console.log('Total Reviews updated.');
+  });
+});
+//
+///
+// End of Functions to track sum of reviews
+
+
+// Functions update total of reviews
+///
+//
+exports.recountReviews = functions.database.ref('users/{uid}/review').onWrite(event => {
+  
+  const collectionRef = event.data.adminRef.root;
+  const uid    = event.params.uid;
+  const countRef = collectionRef.child('users/'+uid+'/review');
+  const cRef = collectionRef.child('user-reviews/'+uid+'/reviews');
+
+  return cRef.once('value')
+        .then(messagesData => countRef.set(messagesData.numChildren()));
+  console.log('Total Reviews updated');
+});
+//
+///
+// End of Functions update total of reviews
+
+
+// Functions update total of reviews
+///
+//
+exports.recountSkill = functions.database.ref('users/{uid}/totalSkill').onWrite(event => {
+  
+  const collectionRef = event.data.adminRef.root;
+  const uid    = event.params.uid;
+  const countRef = collectionRef.child('users/'+uid+'/totalSkill');
+  const cRef = collectionRef.child('user-skills/'+uid);
+
+  return cRef.once('value')
+        .then(messagesData => countRef.set(messagesData.numChildren()));
+  console.log('Total Skill updated');
+});
+//
+///
+// End of Functions update total of reviews
+
+
+// Functions Push Notification Order
+///
+//
+exports.sendOrderNotification = functions.database.ref('/followers/{followedUid}/{followerUid}').onWrite(event => {
+  const followerUid = event.params.followerUid;
+  const followedUid = event.params.followedUid;
+  // If un-follow we exit the function.
+  if (!event.data.val()) {
+    return console.log('User ', followerUid, 'un-followed user', followedUid);
+  }
+  console.log('We have a new follower UID:', followerUid, 'for user:', followerUid);
+
+  // Get the list of device notification tokens.
+  const getDeviceTokensPromise = admin.database().ref(`/users/${followedUid}/notificationTokens`).once('value');
+
+  // Get the follower profile.
+  const getFollowerProfilePromise = admin.auth().getUser(followerUid);
+
+  return Promise.all([getDeviceTokensPromise, getFollowerProfilePromise]).then(results => {
+    const tokensSnapshot = results[0];
+    const follower = results[1];
+
+    // Check if there are any device tokens.
+    if (!tokensSnapshot.hasChildren()) {
+      return console.log('There are no notification tokens to send to.');
+    }
+    console.log('There are', tokensSnapshot.numChildren(), 'tokens to send notifications to.');
+    console.log('Fetched follower profile', follower);
+
+    // Notification details.
+    const payload = {
+      notification: {
+        title: 'You have a new follower!',
+        body: `${follower.displayName} is now following you.`,
+        icon: follower.photoURL
+      }
+    };
+
+    // Listing all tokens.
+    const tokens = Object.keys(tokensSnapshot.val());
+
+    // Send notifications to all tokens.
+    return admin.messaging().sendToDevice(tokens, payload).then(response => {
+      // For each message check if there was an error.
+      const tokensToRemove = [];
+      response.results.forEach((result, index) => {
+        const error = result.error;
+        if (error) {
+          console.error('Failure sending notification to', tokens[index], error);
+          // Cleanup the tokens who are not registered anymore.
+          if (error.code === 'messaging/invalid-registration-token' ||
+              error.code === 'messaging/registration-token-not-registered') {
+            tokensToRemove.push(tokensSnapshot.ref.child(tokens[index]).remove());
+          }
+        }
+      });
+      return Promise.all(tokensToRemove);
+    });
+  });
+});
