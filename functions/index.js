@@ -123,9 +123,6 @@ exports.countSkillchange = functions.database.ref('user-skills/{uid}/{code}').on
 });
 
 
-
-// Functions to track sum of reviews
-///
 //
 exports.countReviewsChange = functions.database.ref('user-reviews/{uid}/reviews/{code}').onWrite(event => {
   const collectionRef = event.data.adminRef.root;
