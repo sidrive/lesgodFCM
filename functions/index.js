@@ -15,17 +15,17 @@ const secureCompare = require('secure-compare');
 
 // LIBS CONSTANT LIST
 // -------------------
-const generateThumbnail   	= require('./libs/images');
-const guruIndexing			= require('./libs/gurus');
-// const deleteOldOrders		= require('./libs/orders')
+const generateThumbnail     = require('./libs/images');
+const guruIndexing      = require('./libs/gurus');
+// const deleteOldOrders    = require('./libs/orders')
 
 
 
 // EXPORT ALL FUNCTIONS
 // -------------------
-exports.generateThumbnail   	= functions.storage.object().onChange(generateThumbnail);
-exports.guruIndexing     		= functions.database.ref('/user-skills/{uid}/{code}').onCreate(guruIndexing);
-// exports.deleteOldOrders 		= functions.https.onRequest(deleteOldOrders);
+exports.generateThumbnail     = functions.storage.object().onChange(generateThumbnail);
+exports.guruIndexing        = functions.database.ref('/user-skills/{uid}/{code}').onCreate(guruIndexing);
+// exports.deleteOldOrders    = functions.https.onRequest(deleteOldOrders);
 
 
 // Cut off time. Child nodes older than this will be deleted.
@@ -161,8 +161,10 @@ exports.recountReviews = functions.database.ref('users/{uid}/review').onWrite(ev
   const cRef = collectionRef.child('user-reviews/'+uid+'/reviews');
 
   return cRef.once('value')
-        .then(messagesData => countRef.set(messagesData.numChildren()));
-  console.log('Total Reviews updated');
+        .then(messagesData => countRef.set(messagesData.numChildren()))
+        .then(() => {
+    console.log('Total Reviews updated');
+  });
 });
 //
 ///
@@ -180,8 +182,10 @@ exports.recountSkill = functions.database.ref('users/{uid}/totalSkill').onWrite(
   const cRef = collectionRef.child('user-skills/'+uid);
 
   return cRef.once('value')
-        .then(messagesData => countRef.set(messagesData.numChildren()));
-  console.log('Total Skill updated');
+        .then(messagesData => countRef.set(messagesData.numChildren())).then(() => {
+    console.log('Total Skill updated');
+  });
+  
 });
 //
 ///
@@ -191,20 +195,46 @@ exports.recountSkill = functions.database.ref('users/{uid}/totalSkill').onWrite(
 // Functions Push Notification Order
 ///
 //
-exports.sendOrderNotification = functions.database.ref('/followers/{followedUid}/{followerUid}').onWrite(event => {
-  const followerUid = event.params.followerUid;
-  const followedUid = event.params.followedUid;
-  // If un-follow we exit the function.
-  if (!event.data.val()) {
-    return console.log('User ', followerUid, 'un-followed user', followedUid);
-  }
-  console.log('We have a new follower UID:', followerUid, 'for user:', followerUid);
+exports.sendOrderNotification = functions.database.ref('orders/{Oid}/status').onWrite(event => {
+  const Oid = event.params.Oid;
+
+  let order, orders = [];
+      const oldItemsQuery = admin.database().ref('/orders/').orderByChild('oid').equalTo(Oid);
+      oldItemsQuery.once('value').then(snapshot => {
+        // create a map with all children that need to be removed
+        
+        snapshot.forEach((childSnapshot) => {
+          order = childSnapshot.val();
+          orders.push(order);
+        });
+        console.log(orders.length + " users retrieved");
+        console.log(order.uid);
+        // Delete users then wipe the database
+
+        let promises = orders.map(order => sendNotification(order));
+        Promise.all(promises)
+            .catch( e => console.log(e.message) );
+        
+  });
+
+ });   
+   
+function sendNotification(order) {
+
+  const guruID = order.gid;
+    const userID = order.uid;
+    const orderID = order.oid;
+
+    /*if (!event.data.val()) {
+    return console.log('User ', orderID, 'un-followed user', userID);
+    }*/
+    console.log('We have a new follower UID:', userID, 'for user:', guruID);
 
   // Get the list of device notification tokens.
-  const getDeviceTokensPromise = admin.database().ref(`/users/${followedUid}/notificationTokens`).once('value');
-
+  const getDeviceTokensPromise = admin.database().ref(`users/${guruID}/guruTokens`).once('value');
+  console.log(getDeviceTokensPromise);
   // Get the follower profile.
-  const getFollowerProfilePromise = admin.auth().getUser(followerUid);
+  const getFollowerProfilePromise = admin.auth().getUser(guruID);
 
   return Promise.all([getDeviceTokensPromise, getFollowerProfilePromise]).then(results => {
     const tokensSnapshot = results[0];
@@ -247,4 +277,4 @@ exports.sendOrderNotification = functions.database.ref('/followers/{followedUid}
       return Promise.all(tokensToRemove);
     });
   });
-});
+}
