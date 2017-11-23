@@ -24,7 +24,7 @@ const guruIndexing			= require('./libs/gurus');
 // EXPORT ALL FUNCTIONS
 // -------------------
 exports.generateThumbnail   	= functions.storage.object().onChange(generateThumbnail);
-// exports.guruIndexing     		= functions.database.ref('/user-skills/{uid}/{code}').onWrite(guruIndexing);
+exports.guruIndexing     		= functions.database.ref('/user-skills/{uid}/{code}').onCreate(guruIndexing);
 // exports.deleteOldOrders 		= functions.https.onRequest(deleteOldOrders);
 
 
