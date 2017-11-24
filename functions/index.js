@@ -192,6 +192,7 @@ exports.recountSkill = functions.database.ref('users/{uid}/totalSkill').onWrite(
 // Functions Push Notification Order
 ///
 //
+   
 exports.sendOrderNotification = functions.database.ref('orders/{Oid}/status').onWrite(event => {
   const Oid = event.params.Oid;
 
@@ -204,8 +205,8 @@ exports.sendOrderNotification = functions.database.ref('orders/{Oid}/status').on
           order = childSnapshot.val();
           orders.push(order);
         });
-        console.log(orders.length + " users retrieved");
-        console.log(order.uid);
+        console.log(orders.length + " order retrieved");
+        console.log("Order title : "+order.title);
         // Delete users then wipe the database
 
         let promises = orders.map(order => sendNotification(order));
@@ -222,41 +223,93 @@ function sendNotification(order) {
     const userID = order.uid;
     const orderID = order.oid;
 
-    /*if (!event.data.val()) {
-    return console.log('User ', orderID, 'un-followed user', userID);
-    }*/
-    console.log('We have a new follower UID:', userID, 'for user:', guruID);
+    if (order.status == 'pending_guru'){
 
-  // Get the list of device notification tokens.
-  const getDeviceTokensPromise = admin.database().ref(`users/${guruID}/guruTokens`).once('value');
-  console.log(getDeviceTokensPromise);
-  // Get the follower profile.
-  const getFollowerProfilePromise = admin.auth().getUser(guruID);
+      // Get the list of device notification tokens.
+      const getGuruTokensPromise = admin.database().ref(`users/${guruID}/guruTokens`).once('value');
 
-  return Promise.all([getDeviceTokensPromise, getFollowerProfilePromise]).then(results => {
-    const tokensSnapshot = results[0];
-    const follower = results[1];
+      // Get the Siswa profile.
+      const getSiswaProfilePromise = admin.auth().getUser(userID);
+
+      return Promise.all([getGuruTokensPromise, getSiswaProfilePromise]).then(results => {
+      const tokensSnapshot = results[0];
+      const siswa = results[1];
+      const titleNotifications = 'Lessgood : Penawaran Mengajar!';
 
     // Check if there are any device tokens.
     if (!tokensSnapshot.hasChildren()) {
       return console.log('There are no notification tokens to send to.');
     }
     console.log('There are', tokensSnapshot.numChildren(), 'tokens to send notifications to.');
-    console.log('Fetched follower profile', follower);
+    console.log('Fetched siswa profile', siswa);
 
     // Notification details.
     const payload = {
       notification: {
-        title: 'You have a new follower!',
-        body: `${follower.displayName} is now following you.`,
-        icon: follower.photoURL
+        title: titleNotifications,
+        body: `${siswa.displayName} ingin menjadi murid Anda. Silahkan konfirmasi paling lambat 2 jam`,
+        icon: siswa.photoURL
       }
     };
 
     // Listing all tokens.
     const tokens = Object.keys(tokensSnapshot.val());
 
-    // Send notifications to all tokens.
+    send(tokens,payload);
+  });
+
+    }if (order.status == 'pending_murid'){
+
+    /*if (!event.data.val()) {
+    return console.log('User ', orderID, 'un-followed user', userID);
+    }
+    console.log('We have a new follower UID:', userID, 'for user:', guruID);*/
+
+  // Get the list of device notification tokens.
+  
+  const getMuridTokensPromise = admin.database().ref(`users/${userID}/userTokens`).once('value');
+  
+  // Get the follower profile.
+  const getGuruProfilePromise = admin.auth().getUser(guruID);
+
+  return Promise.all([getMuridTokensPromise, getGuruProfilePromise]).then(results => {
+    const tokensSnapshot = results[0];
+    const guru = results[1];
+
+    // Check if there are any device tokens.
+    if (!tokensSnapshot.hasChildren()) {
+      return console.log('There are no notification tokens to send to.');
+    }
+    console.log('There are', tokensSnapshot.numChildren(), 'tokens to send notifications to.');
+    console.log('Fetched guru profile', guru);
+
+    // Notification details.
+    const payload = {
+      notification: {
+        title: 'Lessgood : Pengajar bersedia Mengajar',
+        body: `${guru.displayName} akan menjadi guru Anda. Silahkan melakukan pembayaran paling lambat 1x24 jam`,
+        icon: guru.photoURL
+      }
+    };
+
+    // Listing all tokens.
+    const tokens = Object.keys(tokensSnapshot.val());
+    send(tokens,payload)
+    
+  });
+}if (order.status == 'SUCCESS'){
+
+    
+  sendMurid(order);
+  sendGuru(order);
+  
+
+///////////////////////////
+
+}
+
+  function send(tokens,payload){
+  // Send notifications to all tokens.
     return admin.messaging().sendToDevice(tokens, payload).then(response => {
       // For each message check if there was an error.
       const tokensToRemove = [];
@@ -273,5 +326,69 @@ function sendNotification(order) {
       });
       return Promise.all(tokensToRemove);
     });
+  }
+
+  function sendMurid(order){
+  // Get the list of device notification tokens.
+    const getMuridTokensPromise = admin.database().ref(`users/${userID}/userTokens`).once('value');
+  
+  // Get the follower profile.
+  const getGuruProfilePromise = admin.auth().getUser(guruID);
+  
+
+  return Promise.all([getMuridTokensPromise, getGuruProfilePromise]).then(results => {
+    const tokensSnapshot = results[0];
+    const guru = results[1];
+
+    // Check if there are any device tokens.
+    if (!tokensSnapshot.hasChildren()) {
+      return console.log('There are no notification tokens to send to.');
+    }
+    console.log('There are', tokensSnapshot.numChildren(), 'tokens to send notifications to.');
+    console.log('Fetched guru profile', guru);
+
+    // Notification details.
+    const payload = {
+      notification: {
+        title: 'Lessgood : Pembayaran Berhasil!',
+        body: `${guru.displayName} akan menjadi guru Anda.`,
+        icon: guru.photoURL
+      }
+    };
+
+    // Listing all tokens.
+    const tokens = Object.keys(tokensSnapshot.val());
+    send(tokens,payload)
+    
   });
+}
+  function sendGuru(order){
+  const getGuruTokensPromise = admin.database().ref(`users/${guruID}/guruTokens`).once('value');
+  const getMuridProfilePromise = admin.auth().getUser(userID);
+  return Promise.all([getGuruTokensPromise, getMuridProfilePromise]).then(results => {
+    const tokensSnapshot = results[0];
+    const siswa = results[1];
+
+    // Check if there are any device tokens.
+    if (!tokensSnapshot.hasChildren()) {
+      return console.log('There are no notification tokens to send to.');
+    }
+    console.log('There are', tokensSnapshot.numChildren(), 'tokens to send notifications to.');
+    console.log('Fetched guru profile', siswa);
+
+    // Notification details.
+    const payload = {
+      notification: {
+        title: 'Lessgood : Persiapan Mengajar',
+        body: `${siswa.displayName} akan menjadi murid Anda. Silahkan memperkenalkan diri ke murid dan persiapkan untuk Mengajar`,
+        icon: siswa.photoURL
+      }
+    };
+
+    // Listing all tokens.
+    const tokens = Object.keys(tokensSnapshot.val());
+    send(tokens,payload)
+    
+  });
+  }
 }
