@@ -247,7 +247,7 @@ function sendNotification(order) {
     const payload = {
       notification: {
         title: titleNotifications,
-        body: `${siswa.displayName} ingin menjadi murid Anda. Silahkan konfirmasi paling lambat 2 jam`,
+        body: `${siswa.displayName} ingin menjadi murid Anda. Silahkan konfirmasi paling lambat 1x24 jam`,
         icon: siswa.photoURL
       }
     };
@@ -297,7 +297,77 @@ function sendNotification(order) {
     send(tokens,payload)
     
   });
-}if (order.status == 'SUCCESS'){
+}if (order.status == 'cancel_guru'){
+
+    
+  // Get the list of device notification tokens.
+  
+  const getMuridTokensPromise = admin.database().ref(`users/${userID}/userTokens`).once('value');
+  
+  // Get the follower profile.
+  const getGuruProfilePromise = admin.auth().getUser(guruID);
+
+  return Promise.all([getMuridTokensPromise, getGuruProfilePromise]).then(results => {
+    const tokensSnapshot = results[0];
+    const guru = results[1];
+
+    // Check if there are any device tokens.
+    if (!tokensSnapshot.hasChildren()) {
+      return console.log('There are no notification tokens to send to.');
+    }
+    console.log('There are', tokensSnapshot.numChildren(), 'tokens to send notifications to.');
+    console.log('Fetched guru profile', guru);
+
+    // Notification details.
+    const payload = {
+      notification: {
+        title: 'Lessgood : Pengajar Membatalkan Pesanan',
+        body: `${guru.displayName} menolak permintaan LES Anda. Silahkan cari Pengajar yang lain`,
+        icon: guru.photoURL
+      }
+    };
+
+    // Listing all tokens.
+    const tokens = Object.keys(tokensSnapshot.val());
+    send(tokens,payload)
+    
+  });
+}if (order.status == 'cancel_murid'){
+
+      // Get the list of device notification tokens.
+      const getGuruTokensPromise = admin.database().ref(`users/${guruID}/guruTokens`).once('value');
+
+      // Get the Siswa profile.
+      const getSiswaProfilePromise = admin.auth().getUser(userID);
+
+      return Promise.all([getGuruTokensPromise, getSiswaProfilePromise]).then(results => {
+      const tokensSnapshot = results[0];
+      const siswa = results[1];
+      const titleNotifications = 'Lessgood : Murid Membatalkan Pesanan!';
+
+    // Check if there are any device tokens.
+    if (!tokensSnapshot.hasChildren()) {
+      return console.log('There are no notification tokens to send to.');
+    }
+    console.log('There are', tokensSnapshot.numChildren(), 'tokens to send notifications to.');
+    console.log('Fetched siswa profile', siswa);
+
+    // Notification details.
+    const payload = {
+      notification: {
+        title: titleNotifications,
+        body: `${siswa.displayName} telah membatalkan pesanannya. Kami akan memberitahukan kembali jika ada pesanan mengajar untuk anda`,
+        icon: siswa.photoURL
+      }
+    };
+
+    // Listing all tokens.
+    const tokens = Object.keys(tokensSnapshot.val());
+
+    send(tokens,payload);
+  });
+
+    }if (order.status == 'SUCCESS'){
 
     
   sendMurid(order);
