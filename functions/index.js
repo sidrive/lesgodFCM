@@ -29,7 +29,7 @@ exports.guruIndexing        = functions.database.ref('/user-skills/{uid}/{code}'
 
 
 // Cut off time. Child nodes older than this will be deleted.
-const CUT_OFF_TIME = 2 * 60 * 60 * 1000; // 2 Hours in milliseconds.
+const CUT_OFF_TIME = 24 * 60 * 60 * 1000; // 2 Hours in milliseconds.
 
 /**
  * This database triggered function will check for child nodes that are older than the
