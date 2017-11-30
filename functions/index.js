@@ -11,6 +11,17 @@ const rp = require('request-promise');
 const promisePool = require('es6-promise-pool');
 const PromisePool = promisePool.PromisePool;
 const secureCompare = require('secure-compare');
+const nodemailer = require('nodemailer');
+
+const gmailEmail = functions.config().gmail.email;
+const gmailPassword = functions.config().gmail.password;
+const mailTransport = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: gmailEmail,
+    pass: gmailPassword
+  }
+});
 
 
 // LIBS CONSTANT LIST
@@ -490,3 +501,121 @@ function sendNotification(order) {
   });
   }
 }
+
+
+
+
+exports.sendEmailConfirmation = functions.database.ref('orders/{Oid}/status').onWrite(event => {
+
+  const Oid = event.params.Oid;
+
+  let order, orders = [];
+      const oldItemsQuery = admin.database().ref('/orders/').orderByChild('oid').equalTo(Oid);
+      oldItemsQuery.once('value').then(snapshot => {
+        // create a map with all children that need to be removed
+        
+        snapshot.forEach((childSnapshot) => {
+          order = childSnapshot.val();
+          orders.push(order);
+        });
+        console.log(orders.length + " order retrieved");
+        console.log("Order title : "+order.title);
+        // Delete users then wipe the database
+
+        let promises = orders.map(order => sendEmail(order));
+        Promise.all(promises)
+            .catch( e => console.log(e.message) );
+        
+  });
+ 
+});
+
+function sendEmail(order){
+
+  if (order.status == "pending_guru" || order.status == "pending_murid"){
+
+    const emailGuru   = order.guruEmail;
+    const guruSubyek  = 'Pesanan Mengajar Baru!';
+    const guruText    = 
+    `Anda mendapat pesanan mengajar
+
+    Nomor pesanan     : ${order.oid}
+    Nama Pemesan      : ${order.customerName}
+    Lokasi Mengajar   : ${order.detailLocation}
+    Jenis Les         : ${order.title}
+    Mulai Les         : ${order.pertemuanTime}
+    Jumlah Murid      : ${order.totalSiswa}
+    Jumlah Pertemuan  : ${order.totalPertemuan}
+
+Silahkan Instal aplikasi Lesgood pengajar dan tekan tombol terima pesanan mengajar.
+
+Salam hangat
+Admin Lesgood
+
+| +62 813 8243 5938
+Copyright © 2017 Lesgood.com, All rights reserved.`;
+
+    const emailMurid  = order.customerEmail;
+    const muridSubyek = 'Pesanan Mengajar!';
+    const muridText    = 
+    `Pesanan Mengajar Anda sebagai berikut,
+
+    Nomor pesanan      : ${order.oid}
+    Nama Pemesan       : ${order.customerName}
+    Nama Guru          : ${order.guruName}
+    Lokasi Mengajar    : ${order.detailLocation}
+    Jenis Les          : ${order.title}
+    Mulai Les          : ${order.pertemuanTime}
+    Jumlah Murid       : ${order.totalSiswa}
+    Jumlah Pertemuan   : ${order.totalPertemuan}
+
+Telah dikirimkan ke Pengajar, silahkan tunggu konfirmasi maksimal 1x24 jam.
+
+Salam hangat
+Admin Lesgood
+
+| +62 813 8243 5938
+Copyright © 2017 Lesgood.com, All rights reserved.`;
+
+  sendEmailGuru(emailGuru,guruSubyek,guruText);
+  sendEmailMurid(emailMurid,muridSubyek,muridText);
+
+  }
+
+  function sendEmailGuru(email,subyek,textEmail){
+
+  const mailOptions = {
+    from: '"Lesgood Admin." <noreply@lesgood.com>',
+    to: email
+  };
+  
+  // Building Email message.
+  mailOptions.subject = subyek;
+  mailOptions.text = textEmail;
+  
+  return mailTransport.sendMail(mailOptions)
+    .then(() => console.log(`New ${email ? '' : 'un'}subscription confirmation email sent to:`, email))
+    .catch(error => console.error('There was an error while sending the email:', error));
+  }
+
+  function sendEmailMurid(email,subyek,textEmail){
+
+  const mailOptions = {
+    from: '"Lesgood Admin." <noreply@lesgood.com>',
+    to: email
+  };
+  
+  // Building Email message.
+  mailOptions.subject = subyek;
+  mailOptions.text = textEmail;
+  
+  return mailTransport.sendMail(mailOptions)
+    .then(() => console.log(`New ${email ? '' : 'un'}subscription confirmation email sent to:`, email))
+    .catch(error => console.error('There was an error while sending the email:', error));
+  }
+
+}
+
+
+
+  
