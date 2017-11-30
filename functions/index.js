@@ -245,9 +245,13 @@ function sendNotification(order) {
 
     // Notification details.
     const payload = {
+      data: {  
+            orderid: order.oid,            
+        },
       notification: {
         title: titleNotifications,
-        body: `${siswa.displayName} ingin menjadi murid Anda. Silahkan konfirmasi paling lambat 1x24 jam`,
+        body: `${siswa.displayName} ingin menjadi murid Anda. Silahkan konfirmasi paling lambat 1x24 jam` || siswa.photoURL,
+        sound: `default`,
         icon: siswa.photoURL
       }
     };
@@ -287,7 +291,8 @@ function sendNotification(order) {
     const payload = {
       notification: {
         title: 'Lessgood : Pengajar bersedia Mengajar',
-        body: `${guru.displayName} akan menjadi guru Anda. Silahkan melakukan pembayaran paling lambat 1x24 jam`,
+        body: `${order.guruName} akan menjadi guru Anda. Silahkan melakukan pembayaran paling lambat 5 jam` || guru.photoURL,
+        sound: `default`,
         icon: guru.photoURL
       }
     };
@@ -322,7 +327,8 @@ function sendNotification(order) {
     const payload = {
       notification: {
         title: 'Lessgood : Pengajar Membatalkan Pesanan',
-        body: `${guru.displayName} menolak permintaan LES Anda. Silahkan cari Pengajar yang lain`,
+        body: `Mohon maaf pengajar atas Nama ${order.guruName} berhalangan mengajar. Silahkan memilih pengajar lain.` || guru.photoURL,
+        sound: `default`,
         icon: guru.photoURL
       }
     };
@@ -356,7 +362,8 @@ function sendNotification(order) {
     const payload = {
       notification: {
         title: titleNotifications,
-        body: `${siswa.displayName} telah membatalkan pesanannya. Kami akan memberitahukan kembali jika ada pesanan mengajar untuk anda`,
+        body: `Mohon maaf murid membatalkan pesanan mengajar.` || siswa.photoURL,
+        sound: `default`,
         icon: siswa.photoURL
       }
     };
@@ -369,18 +376,37 @@ function sendNotification(order) {
 
     }if (order.status == 'SUCCESS'){
 
+      const titleMurid = 'Lessgood : Pembayaran Berhasil!';
+      const titleGuru = 'Lessgood : Persiapan Mengajar';
+      const bodyMurid = `Pengajar akan segera menghubungi anda. Nama Pengajar : ${order.guruName}.` || guru.photoURL;
+      const bodyGuru  = `Murid telah menyelesaikan pembayaran. Silahkan menghubungi murid untuk memperkenalkan diri` || siswa.photoURL;
+
     
-  sendMurid(order);
-  sendGuru(order);
+  sendMurid(order,titleMurid,bodyMurid);
+  sendGuru(order,titleGuru,bodyGuru);
   
+} if (order.status == 'change_guru'){
 
-///////////////////////////
+      const titleMurid = 'Lessgood : Penggantian Pengajar';
+      const titleGuru = 'Lessgood : Murid Ingin Mengganti Pengajar';
+      const bodyMurid = `Penawaran Penggantian Pengajar sedang dikirimkan, Silahkan tunggu konfirmasi pengajar`;
+      const bodyGuru  = `Maaf, murid melakukan penggantian pengajar. Sesi belajar anda telah berakhir. 
+                          silahkan melakukan evaluasi untuk meningkatkan kualitas mengajar anda.` || siswa.photoURL;
 
+    
+  sendMurid(order,titleMurid,bodyMurid);
+  sendGuru(order,titleGuru,bodyGuru);
+  
 }
 
+
   function send(tokens,payload){
+    const options = {
+        priority: "high",
+        timeToLive: 60 * 60 * 24
+};
   // Send notifications to all tokens.
-    return admin.messaging().sendToDevice(tokens, payload).then(response => {
+    return admin.messaging().sendToDevice(tokens, payload, options).then(response => {
       // For each message check if there was an error.
       const tokensToRemove = [];
       response.results.forEach((result, index) => {
@@ -398,7 +424,7 @@ function sendNotification(order) {
     });
   }
 
-  function sendMurid(order){
+  function sendMurid(order,titleMurid,bodyMurid){
   // Get the list of device notification tokens.
     const getMuridTokensPromise = admin.database().ref(`users/${userID}/userTokens`).once('value');
   
@@ -420,8 +446,9 @@ function sendNotification(order) {
     // Notification details.
     const payload = {
       notification: {
-        title: 'Lessgood : Pembayaran Berhasil!',
-        body: `${guru.displayName} akan menjadi guru Anda.`,
+        title: titleMurid,
+        body: bodyMurid,
+        sound: `default`,
         icon: guru.photoURL
       }
     };
@@ -432,7 +459,7 @@ function sendNotification(order) {
     
   });
 }
-  function sendGuru(order){
+  function sendGuru(order,titleGuru,bodyGuru){
   const getGuruTokensPromise = admin.database().ref(`users/${guruID}/guruTokens`).once('value');
   const getMuridProfilePromise = admin.auth().getUser(userID);
   return Promise.all([getGuruTokensPromise, getMuridProfilePromise]).then(results => {
@@ -444,13 +471,14 @@ function sendNotification(order) {
       return console.log('There are no notification tokens to send to.');
     }
     console.log('There are', tokensSnapshot.numChildren(), 'tokens to send notifications to.');
-    console.log('Fetched guru profile', siswa);
+    console.log('Fetched siswa profile', siswa);
 
     // Notification details.
     const payload = {
       notification: {
-        title: 'Lessgood : Persiapan Mengajar',
-        body: `${siswa.displayName} akan menjadi murid Anda. Silahkan memperkenalkan diri ke murid dan persiapkan untuk Mengajar`,
+        title: titleGuru,
+        body: bodyGuru,
+        sound: `default`,
         icon: siswa.photoURL
       }
     };
