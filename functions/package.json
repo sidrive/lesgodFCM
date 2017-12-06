@@ -2,24 +2,124 @@
   "name": "functions",
   "description": "Cloud Functions for Firebase",
   "scripts": {
-    "serve": "firebase serve --only functions",
-    "shell": "firebase experimental:functions:shell",
-    "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
+    "lint": "xo && remark . -qfo",
+    "precommit": "lint-staged && npm test",
+    "test": "npm run build && npm run lint && npm run test-coverage",
+    "test-coverage": "cross-env NODE_ENV=test nyc ava",
+    "build": "node_modules/.bin/babel src --out-dir lib",
+    "watch": "node_modules/.bin/babel src --watch --out-dir lib"
   },
   "dependencies": {
+    "@google-cloud/storage": "^0.4.0",
+    "@ladjs/i18n": "0.0.8",
+    "async": "^2.6.0",
+    "auto-bind": "^1.1.0",
+    "child-process-promise": "^2.2.0",
+    "consolidate": "^0.15.0",
+    "debug": "^3.1.0",
+    "ejs": "^2.5.7",
+    "email-templates": "^2.7.1",
     "es6-promise-pool": "^2.4.4",
     "firebase-admin": "^4.1.1",
     "firebase-functions": "^0.5.9",
-    "request": "^2.79.0",
-    "request-promise": "^4.1.1",
-    "secure-compare": "^3.0.1",
-    "@google-cloud/storage": "^0.4.0",
-    "child-process-promise": "^2.2.0",
+    "fs-extra": "^4.0.2",
+    "get-paths": "0.0.2",
+    "grpc": "^1.7.2",
+    "html-to-text": "^3.3.0",
+    "juice": "^4.2.2",
+    "juice-resources-promise": "0.0.2",
+    "lodash": "^4.17.4",
+    "lodash.defaultsdeep": "^4.6.0",
+    "lodash.isempty": "^4.4.0",
+    "lodash.isfunction": "^3.0.8",
+    "lodash.isobject": "^3.0.2",
+    "lodash.isstring": "^4.0.1",
+    "lodash.merge": "^4.6.0",
+    "lodash.omit": "^4.5.0",
     "mkdirp": "^0.5.1",
     "mkdirp-promise": "^4.0.0",
-    "nodemailer": "^2.4.1"
+    "nodemailer": "^4.4.0",
+    "preview-email": "0.0.6",
+    "request": "^2.79.0",
+    "request-promise": "^4.1.1",
+    "secure-compare": "^3.0.1"
   },
-  "private": true
+  "devDependencies": {
+    "ava": "^0.23.0",
+    "babel-core": "^6.11.0",
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "cheerio": "^1.0.0-rc.2",
+    "codecov": "^3.0.0",
+    "cross-env": "^5.1.1",
+    "eslint": "^4.12.0",
+    "eslint-config-prettier": "^2.9.0",
+    "eslint-plugin-prettier": "^2.3.1",
+    "husky": "^0.14.3",
+    "lint-staged": "^5.0.0",
+    "nyc": "^11.3.0",
+    "prettier": "^1.8.2",
+    "pug": "^2.0.0-rc.4",
+    "remark-cli": "^4.0.0",
+    "remark-preset-github": "^0.0.7",
+    "xo": "^0.19.0"
+  },
+  "engines": {
+    "node": ">=6.4.0"
+  },
+  "private": true,
+  "lint-staged": {
+    "*.{js,jsx,mjs,ts,tsx,css,less,scss,json,graphql}": [
+      "prettier --write --single-quote --trailing-comma none",
+      "git add"
+    ],
+    "*.md": [
+      "remark . -qfo",
+      "git add"
+    ]
+  },
+  "main": "./index.js",
+  "files": [
+    "lib"
+  ],
+  "remarkConfig": {
+    "plugins": [
+      "preset-github"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/niftylettuce/email-templates"
+  },
+  "xo": {
+    "extends": "prettier",
+    "plugins": [
+      "prettier"
+    ],
+    "parserOptions": {
+      "sourceType": "script"
+    },
+    "rules": {
+      "prettier/prettier": [
+        "error",
+        {
+          "singleQuote": true,
+          "bracketSpacing": true,
+          "trailingComma": "none"
+        }
+      ],
+      "max-len": [
+        "error",
+        {
+          "code": 80,
+          "ignoreUrls": true
+        }
+      ],
+      "capitalized-comments": "off",
+      "camelcase": "off",
+      "no-warning-comments": "off"
+    },
+    "space": true
+  }
 }

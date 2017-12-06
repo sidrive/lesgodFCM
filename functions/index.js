@@ -12,6 +12,13 @@ const promisePool = require('es6-promise-pool');
 const PromisePool = promisePool.PromisePool;
 const secureCompare = require('secure-compare');
 const nodemailer = require('nodemailer');
+/*const Email = require('email-templates');*/
+const consolidate = require('consolidate');
+const path = require('path');
+const fs = require('fs');
+/*const test = require('ava');*/
+/*const cheerio = require('cheerio');*/
+const root = path.join(__dirname, 'emails','transaksi');
 
 const gmailEmail = functions.config().gmail.email;
 const gmailPassword = functions.config().gmail.password;
@@ -28,6 +35,7 @@ const mailTransport = nodemailer.createTransport({
 // -------------------
 const generateThumbnail     = require('./libs/images');
 const guruIndexing      = require('./libs/gurus');
+var Email      = require('./libs/email');
 // const deleteOldOrders    = require('./libs/orders')
 
 
@@ -505,7 +513,7 @@ function sendNotification(order) {
 
 
 
-exports.sendEmailConfirmation = functions.database.ref('orders/{Oid}/status').onWrite(event => {
+/* exports.sendEmailConfirmation = functions.database.ref('orders/{Oid}/status').onWrite(event => {
 
   const Oid = event.params.Oid;
 
@@ -528,61 +536,70 @@ exports.sendEmailConfirmation = functions.database.ref('orders/{Oid}/status').on
         
   });
  
-});
+}); */
+
+exports.sendEmailNotifications = functions.database.ref('orders/{Oid}/status').onWrite(event => {
+  
+    const Oid = event.params.Oid;
+  
+    let order, orders = [];
+        const oldItemsQuery = admin.database().ref('/orders/').orderByChild('oid').equalTo(Oid);
+        oldItemsQuery.once('value').then(snapshot => {
+          // create a map with all children that need to be removed
+          
+          snapshot.forEach((childSnapshot) => {
+            order = childSnapshot.val();
+            orders.push(order);
+          });
+          console.log(orders.length + " order retrieved");
+          console.log("Order title : "+order.title);
+          // Delete users then wipe the database
+  
+          let promises = orders.map(order => sendEmail(order));
+          Promise.all(promises)
+              .catch( e => console.log(e.message) );
+          
+    });
+   
+  });
 
 function sendEmail(order){
 
-  if (order.status == "pending_guru" || order.status == "pending_murid"){
+  if (order.status == "pending_guru"){
 
     const emailGuru   = order.guruEmail;
     const guruSubyek  = 'Pesanan Mengajar Baru!';
-    const guruText    = 
-    `Anda mendapat pesanan mengajar
+    
+   sendEmailGuru(emailGuru,guruSubyek,order);
 
-    Nomor pesanan     : ${order.oid}
-    Nama Pemesan      : ${order.customerName}
-    Lokasi Mengajar   : ${order.detailLocation}
-    Jenis Les         : ${order.title}
-    Mulai Les         : ${order.pertemuanTime}
-    Jumlah Murid      : ${order.totalSiswa}
-    Jumlah Pertemuan  : ${order.totalPertemuan}
-
-Silahkan Instal aplikasi Lesgood pengajar dan tekan tombol terima pesanan mengajar.
-
-Salam hangat
-Admin Lesgood
-
-| +62 813 8243 5938
-Copyright © 2017 Lesgood.com, All rights reserved.`;
+  } if (order.status == "pending_murid"){
 
     const emailMurid  = order.customerEmail;
     const muridSubyek = 'Pesanan Mengajar!';
-    const muridText    = 
-    `Pesanan Mengajar Anda sebagai berikut,
+    
+   sendEmailMurid(emailMurid,muridSubyek,order);
 
-    Nomor pesanan      : ${order.oid}
-    Nama Pemesan       : ${order.customerName}
-    Nama Guru          : ${order.guruName}
-    Lokasi Mengajar    : ${order.detailLocation}
-    Jenis Les          : ${order.title}
-    Mulai Les          : ${order.pertemuanTime}
-    Jumlah Murid       : ${order.totalSiswa}
-    Jumlah Pertemuan   : ${order.totalPertemuan}
+  } if (order.status == "SUCCESS"){
+    const emailGuru   = order.guruEmail;
+    const emailMurid  = order.customerEmail;
+    const subyek      = "Transaksi Sukses";
 
-Telah dikirimkan ke Pengajar, silahkan tunggu konfirmasi maksimal 1x24 jam.
+    /* sendEmailMurid(emailMurid,subyek,order); */
+    sendEmailGuru(emailGuru,subyek,order);
+  } if (order.status == "cancel_guru"){
+    const emailMurid  = order.customerEmail;
+    const subyek      = "Pembatalan Pesanan!";
 
-Salam hangat
-Admin Lesgood
-
-| +62 813 8243 5938
-Copyright © 2017 Lesgood.com, All rights reserved.`;
-
-  sendEmailGuru(emailGuru,guruSubyek,guruText);
-  sendEmailMurid(emailMurid,muridSubyek,muridText);
-
+    sendEmailMurid(emailMurid,subyek,order);
+  } if (order.status == "cancel_murid"){
+    const emailGuru   = order.guruEmail;
+    const guruSubyek  = 'Pembatalan Pesanan!';
+    
+   sendEmailGuru(emailGuru,guruSubyek,order);
   }
+  
 
-  function sendEmailGuru(email,subyek,textEmail){
+  function sendEmailGuru(email,subyek,order){
 
   const mailOptions = {
     from: '"Lesgood Admin." <noreply@lesgood.com>',
@@ -591,14 +608,14 @@ Copyright © 2017 Lesgood.com, All rights reserved.`;
   
   // Building Email message.
   mailOptions.subject = subyek;
-  mailOptions.text = textEmail;
+  mailOptions.html = Email.emails(order);
   
   return mailTransport.sendMail(mailOptions)
     .then(() => console.log(`New ${email ? '' : 'un'}subscription confirmation email sent to:`, email))
     .catch(error => console.error('There was an error while sending the email:', error));
   }
 
-  function sendEmailMurid(email,subyek,textEmail){
+  function sendEmailMurid(email,subyek,order){
 
   const mailOptions = {
     from: '"Lesgood Admin." <noreply@lesgood.com>',
@@ -607,7 +624,7 @@ Copyright © 2017 Lesgood.com, All rights reserved.`;
   
   // Building Email message.
   mailOptions.subject = subyek;
-  mailOptions.text = textEmail;
+  mailOptions.html = Email.emails(order);
   
   return mailTransport.sendMail(mailOptions)
     .then(() => console.log(`New ${email ? '' : 'un'}subscription confirmation email sent to:`, email))
@@ -618,4 +635,68 @@ Copyright © 2017 Lesgood.com, All rights reserved.`;
 
 
 
+
+
+exports.deleteOldToken = functions.https.onRequest((req, res) => {
   
+     const key = req.query.key;
+
+  // Exit if the keys don't match
+  if (!secureCompare(key, functions.config().cron.key)) {
+    console.log('The key provided in the request does not match the key set in the environment. Check that', key,
+        'matches the cron.key attribute in `firebase env:get`');
+    res.status(403).send('Security key does not match. Make sure your "key" URL query parameter matches the ' +
+        'cron.key environment variable.');
+    return;
+  }
+  /*const ref = admin.database().ref();*/
+  const now = Date.now();
+  const cutoff = now - CUT_OFF_TIME;
+  
+  
+      let user, users = [];
+      let oldItemsQuery = admin.database().ref('/users').orderByChild('guruTokens');
+      oldItemsQuery.once('value').then(snapshot => {
+        // create a map with all children that need to be removed
+        
+        snapshot.forEach((childSnapshot) => {
+          user = childSnapshot.val();
+          users.push(user);
+        });
+        console.log(users.length + " token retrieved");
+        // Delete users then wipe the database
+
+      if (users.length > 0) {
+        // Now map users to an Array of Promises
+        console.log("Checking status users... ");
+        let promises = users.map(user => deleteToken(user));
+
+        // Wait for all Promises to complete before wiping db
+        Promise.all(promises)
+            .catch( e => console.log(e.message) );
+    } if (users.length == 0 ){
+      res.end('finish');
+    }    
+  }).then(()=>{
+          res.send('finish')
+        }).catch(error =>{
+          res.send('error')
+        })
+ });
+
+  function deleteToken(token) {
+    
+        return new Promise((resolve, reject) => {
+            console.log("Delete token: " + user.uid + "");
+            admin.database().ref('/users/'+user.uid+'/guruTokens').remove()
+            .then( () => {
+                    console.log(user.uid + " token deleted.");
+                    resolve(order);
+                })
+                .catch( e => {
+                    console.log([e.message, user.uid, "could not be deleted!"].join(' '));
+                    resolve(user);
+                });
+        });
+      
+    }
