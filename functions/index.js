@@ -12,7 +12,9 @@ const promisePool = require('es6-promise-pool');
 const PromisePool = promisePool.PromisePool;
 const secureCompare = require('secure-compare');
 const nodemailer = require('nodemailer');
-/*const Email = require('email-templates');*/
+var dateFormat = require('dateformat');
+/* var moment = require('moment'); */
+var moment = require('moment-timezone');
 const consolidate = require('consolidate');
 const path = require('path');
 const fs = require('fs');
@@ -49,6 +51,21 @@ exports.guruIndexing        = functions.database.ref('/user-skills/{uid}/{code}'
 
 // Cut off time. Child nodes older than this will be deleted.
 const CUT_OFF_TIME = 24 * 60 * 60 * 1000; // 2 Hours in milliseconds.
+
+//Set day format to Asia/Jakarta
+dateFormat.i18n = {
+  dayNames: [
+      'Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab',
+      'Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jum\'at', 'Sabtu'
+  ],
+  monthNames: [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agust', 'Sep', 'Okt', 'Nov', 'Des',
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ],
+  timeNames: [
+      'a', 'p', 'am', 'pm', 'A', 'P', 'AM', 'PM'
+  ]
+};
 
 /**
  * This database triggered function will check for child nodes that are older than the
@@ -235,6 +252,7 @@ exports.sendOrderNotification = functions.database.ref('orders/{Oid}/status').on
   });
 
  });   
+
    
 function sendNotification(order) {
 
@@ -511,32 +529,8 @@ function sendNotification(order) {
 }
 
 
-
-
-/* exports.sendEmailConfirmation = functions.database.ref('orders/{Oid}/status').onWrite(event => {
-
-  const Oid = event.params.Oid;
-
-  let order, orders = [];
-      const oldItemsQuery = admin.database().ref('/orders/').orderByChild('oid').equalTo(Oid);
-      oldItemsQuery.once('value').then(snapshot => {
-        // create a map with all children that need to be removed
-        
-        snapshot.forEach((childSnapshot) => {
-          order = childSnapshot.val();
-          orders.push(order);
-        });
-        console.log(orders.length + " order retrieved");
-        console.log("Order title : "+order.title);
-        // Delete users then wipe the database
-
-        let promises = orders.map(order => sendEmail(order));
-        Promise.all(promises)
-            .catch( e => console.log(e.message) );
-        
-  });
- 
-}); */
+//This is start of Functions Email Notifications
+//-------
 
 exports.sendEmailNotifications = functions.database.ref('orders/{Oid}/status').onWrite(event => {
   
@@ -563,140 +557,96 @@ exports.sendEmailNotifications = functions.database.ref('orders/{Oid}/status').o
    
   });
 
-function sendEmail(order){
+
+  function sendEmail(order){
 
   if (order.status == "pending_guru"){
 
     const emailGuru   = order.guruEmail;
     const guruSubyek  = 'Pesanan Mengajar Baru!';
+    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
     
-   sendEmailGuru(emailGuru,guruSubyek,order);
+   sendEmailGuru(emailGuru,guruSubyek,order,pertemuanTime);
 
   } if (order.status == "pending_murid"){
 
     const emailMurid  = order.customerEmail;
     const muridSubyek = 'Pesanan Mengajar!';
+    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
     
-   sendEmailMurid(emailMurid,muridSubyek,order);
+   sendEmailMurid(emailMurid,muridSubyek,order,pertemuanTime);
 
   } if (order.status == "SUCCESS"){
     const emailGuru   = order.guruEmail;
-    const emailMurid  = order.customerEmail;
     const subyek      = "Transaksi Sukses";
+    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
 
-    /* sendEmailMurid(emailMurid,subyek,order); */
-    sendEmailGuru(emailGuru,subyek,order);
+    sendEmailGuru(emailGuru,subyek,order,pertemuanTime);
   } if (order.status == "cancel_guru"){
     const emailMurid  = order.customerEmail;
     const subyek      = "Pembatalan Pesanan!";
+    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
 
-    sendEmailMurid(emailMurid,subyek,order);
+    sendEmailMurid(emailMurid,subyek,order,pertemuanTime);
   } if (order.status == "cancel_murid"){
     const emailGuru   = order.guruEmail;
     const guruSubyek  = 'Pembatalan Pesanan!';
+    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
     
-   sendEmailGuru(emailGuru,guruSubyek,order);
+   sendEmailGuru(emailGuru,guruSubyek,order,pertemuanTime);
   }
+  console.log("Order Status : "+order.status);
+   
+};
+
+function sendEmailGuru(email,subyek,order,pertemuantime){
   
-
-  function sendEmailGuru(email,subyek,order){
-
-  const mailOptions = {
-    from: '"Lesgood Admin." <noreply@lesgood.com>',
-    to: email
-  };
-  
-  // Building Email message.
-  mailOptions.subject = subyek;
-  mailOptions.html = Email.emails(order);
-  
-  return mailTransport.sendMail(mailOptions)
-    .then(() => console.log(`New ${email ? '' : 'un'}subscription confirmation email sent to:`, email))
-    .catch(error => console.error('There was an error while sending the email:', error));
-  }
-
-  function sendEmailMurid(email,subyek,order){
-
-  const mailOptions = {
-    from: '"Lesgood Admin." <noreply@lesgood.com>',
-    to: email
-  };
-  
-  // Building Email message.
-  mailOptions.subject = subyek;
-  mailOptions.html = Email.emails(order);
-  
-  return mailTransport.sendMail(mailOptions)
-    .then(() => console.log(`New ${email ? '' : 'un'}subscription confirmation email sent to:`, email))
-    .catch(error => console.error('There was an error while sending the email:', error));
-  }
-
-}
-
-
-
-
-
-exports.deleteOldToken = functions.https.onRequest((req, res) => {
-  
-     const key = req.query.key;
-
-  // Exit if the keys don't match
-  if (!secureCompare(key, functions.config().cron.key)) {
-    console.log('The key provided in the request does not match the key set in the environment. Check that', key,
-        'matches the cron.key attribute in `firebase env:get`');
-    res.status(403).send('Security key does not match. Make sure your "key" URL query parameter matches the ' +
-        'cron.key environment variable.');
-    return;
-  }
-  /*const ref = admin.database().ref();*/
-  const now = Date.now();
-  const cutoff = now - CUT_OFF_TIME;
-  
-  
-      let user, users = [];
-      let oldItemsQuery = admin.database().ref('/users').orderByChild('guruTokens');
-      oldItemsQuery.once('value').then(snapshot => {
-        // create a map with all children that need to be removed
-        
-        snapshot.forEach((childSnapshot) => {
-          user = childSnapshot.val();
-          users.push(user);
-        });
-        console.log(users.length + " token retrieved");
-        // Delete users then wipe the database
-
-      if (users.length > 0) {
-        // Now map users to an Array of Promises
-        console.log("Checking status users... ");
-        let promises = users.map(user => deleteToken(user));
-
-        // Wait for all Promises to complete before wiping db
-        Promise.all(promises)
-            .catch( e => console.log(e.message) );
-    } if (users.length == 0 ){
-      res.end('finish');
-    }    
-  }).then(()=>{
-          res.send('finish')
-        }).catch(error =>{
-          res.send('error')
-        })
- });
-
-  function deleteToken(token) {
+    const mailOptions = {
+      from: '"Lesgood Admin." <noreply@lesgood.com>',
+      to: email
+    };
     
-        return new Promise((resolve, reject) => {
-            console.log("Delete token: " + user.uid + "");
-            admin.database().ref('/users/'+user.uid+'/guruTokens').remove()
-            .then( () => {
-                    console.log(user.uid + " token deleted.");
-                    resolve(order);
-                })
-                .catch( e => {
-                    console.log([e.message, user.uid, "could not be deleted!"].join(' '));
-                    resolve(user);
-                });
-        });
+    // Building Email message.
+    mailOptions.subject = subyek;
+    mailOptions.html = Email.emails(order,pertemuantime);
+    console.log("function sendEmailGuru running");
+    console.log("Mulai Les :"+pertemuantime);
+    
+    return mailTransport.sendMail(mailOptions)
+      .then(() => console.log(`New ${email ? '' : 'un'}subscription confirmation email sent to:`, email))
+      .catch(error => console.error('There was an error while sending the email:', error));
       
+     
     }
+  
+    function sendEmailMurid(email,subyek,order,pertemuantime){
+  
+    const mailOptions = {
+      from: '"Lesgood Admin." <noreply@lesgood.com>',
+      to: email
+    };
+    
+    // Building Email message.
+    mailOptions.subject = subyek;
+    mailOptions.html = Email.emails(order,pertemuantime);
+    console.log("function sendEmailMurid running");
+    console.log("Mulai Les :"+pertemuantime);
+    
+    return mailTransport.sendMail(mailOptions)
+      .then(() => console.log(`New ${email ? '' : 'un'}subscription confirmation email sent to:`, email))
+      .catch(error => console.error('There was an error while sending the email:', error));
+      
+      
+    };
+
+
+
+    function getPertemuanTime(timeStamp) {
+    /* var date = new Date(timeStamp); */
+    
+      var jam = moment(timeStamp).tz('Asia/Jakarta').format('ddd MMM D Y HH:m:ss');
+      var str  = dateFormat(jam, "dddd, d mmmm yyyy, HH:MM:ss",true);
+      /* console.log("jam : "+jam);
+      console.log("tgl : "+date); */
+    return str;
+  };
