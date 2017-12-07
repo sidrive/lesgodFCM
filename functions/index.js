@@ -640,7 +640,9 @@ function sendEmailGuru(email,subyek,order,pertemuantime){
     };
 
 
-
+// Start function to parsing pertemuanTime from timestamp to local time
+//
+//
     function getPertemuanTime(timeStamp) {
     /* var date = new Date(timeStamp); */
     
