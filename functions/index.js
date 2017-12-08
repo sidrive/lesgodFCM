@@ -440,7 +440,14 @@ function sendNotification(order) {
   function send(tokens,payload){
     const options = {
         priority: "high",
-        timeToLive: 60 * 60 * 24
+        vibrate: [100, 50, 100],
+        timeToLive: 60 * 60 * 24,
+        actions: [
+          {action: 'explore', title: 'Explore this new world',
+            icon: 'images/checkmark.png'},
+          {action: 'close', title: 'Close notification',
+            icon: 'images/xmark.png'},
+        ]
 };
   // Send notifications to all tokens.
     return admin.messaging().sendToDevice(tokens, payload, options).then(response => {
