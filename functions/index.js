@@ -606,6 +606,8 @@ exports.sendEmailNotifications = functions.database.ref('orders/{Oid}/status').o
    
 };
 
+
+
 function sendEmailGuru(email,subyek,order,pertemuantime){
   
     const mailOptions = {
@@ -647,6 +649,74 @@ function sendEmailGuru(email,subyek,order,pertemuantime){
     };
 
 
+
+    exports.sendEmailConfirmation = functions.database.ref('users/{Uid}/verified').onWrite(event => {
+      
+        const Uid = event.params.Uid;
+      
+        let user, users = [];
+            const oldItemsQuery = admin.database().ref('/users/').orderByChild('uid').equalTo(Uid);
+            oldItemsQuery.once('value').then(snapshot => {
+              // create a map with all children that need to be removed
+              
+              snapshot.forEach((childSnapshot) => {
+                user = childSnapshot.val();
+                users.push(user);
+              });
+              console.log(users.length + " user retrieved");
+              console.log("User email : "+user.email);
+              // Delete users then wipe the database
+      
+              let promises = users.map(user => sendEmailConfirm(user));
+              Promise.all(promises)
+                  .catch( e => console.log(e.message) );              
+        });       
+      });
+
+      function sendEmailConfirm(user){
+        
+          if (user.verified === false && user.userType == "PENGAJAR"){
+        
+            const emailUser   = user.email;
+            const userSubyek  = 'Selamat Datang di LesGood!';
+                  
+           sendEmailUser(emailUser,userSubyek,user);
+           
+        
+          } if (user.verified === true && user.userType == "PENGAJAR"){
+            
+            const emailUser   = user.email;
+            const userSubyek  = 'Selamat Akun Anda Terverifikasi!';
+                      
+           sendEmailUser(emailUser,userSubyek,user);
+           
+        
+          } 
+          console.log("User Type : "+user.userType);
+          console.log("User Status : "+user.verified);
+           
+        };
+
+        function sendEmailUser(email,subyek,user){
+          
+            const mailOptions = {
+              from: '"Lesgood Admin." <noreply@lesgood.com>',
+              to: email
+            };
+            
+            // Building Email message.
+            mailOptions.subject = subyek;
+            mailOptions.html = Email.emailuser(user);
+            console.log("function sendEmailUser running");
+                        
+            return mailTransport.sendMail(mailOptions)
+              .then(() => console.log(`New ${email ? '' : 'un'}subscription confirmation email sent to:`, email))
+              .catch(error => console.error('There was an error while sending the email:', error));
+              
+             
+            }
+
+
 // Start function to parsing pertemuanTime from timestamp to local time
 //
 //
@@ -659,3 +729,84 @@ function sendEmailGuru(email,subyek,order,pertemuantime){
       console.log("tgl : "+date); */
     return str;
   };
+
+
+
+
+////Start of function delete user token
+///
+//
+  exports.deleteOldToken = functions.https.onRequest((req, res) => {
+    
+       const key = req.query.key;
+  
+    // Exit if the keys don't match
+    if (!secureCompare(key, functions.config().cron.key)) {
+      console.log('The key provided in the request does not match the key set in the environment. Check that', key,
+          'matches the cron.key attribute in `firebase env:get`');
+      res.status(403).send('Security key does not match. Make sure your "key" URL query parameter matches the ' +
+          'cron.key environment variable.');
+      return;
+    }
+    /*const ref = admin.database().ref();*/
+    const now = Date.now();
+    const cutoff = now - CUT_OFF_TIME;
+    
+    
+        let user, users = [];
+        let oldItemsQuery = admin.database().ref('/users').orderByChild('userType');
+        oldItemsQuery.once('value').then(snapshot => {
+          // create a map with all children that need to be removed
+          
+          snapshot.forEach((childSnapshot) => {
+            user = childSnapshot.val();
+            users.push(user);
+          });
+          console.log(users.length + " users retrieved");
+          // Delete users then wipe the database
+  
+        if (users.length > 0) {
+          // Now map users to an Array of Promises
+          console.log("Checking status users... ");
+          let promises = users.map(user => deleteToken(user));
+  
+          // Wait for all Promises to complete before wiping db
+          Promise.all(promises)
+              .catch( e => console.log(e.message) );
+      } if (users.length == 0 ){
+        res.end('finish');
+      }    
+    }).then(()=>{
+            res.send('finish')
+          }).catch(error =>{
+            res.send('error')
+          })
+   });
+  
+    function deleteToken(user) {
+      /* if (user.guruTokens.length > 1){
+          return new Promise((resolve, reject) => {
+              console.log("Delete user token: " + user.uid + "");
+              admin.database().ref('/users/'+user.uid+'/guruTokens').remove()
+              .then( () => {
+                      console.log(user.uid + "Tokens deleted.");
+                      resolve(user);
+                  })
+                  .catch( e => {
+                      console.log([e.message, user.uid, "could not be deleted!"].join(' '));
+                      resolve(user);
+                  });
+          });
+        }  */
+        
+        if(user.userType == 'PENGAJAR'){
+          const guruToken = admin.database().ref(`users/${user.uid}/guruTokens`).once('value');
+          return Promise.all([guruToken,user.userTokens]).then(results => {
+            const token = results[0];
+            const tokens = Object.keys(token.val());
+            console.log("Guru Name : "+user.full_name+", token: "+token.child(`/guruTokens/`).key);
+          });
+          console.log("Status users is approved... ");        
+        console.log("Users could not be deleted ");
+        }
+      }
