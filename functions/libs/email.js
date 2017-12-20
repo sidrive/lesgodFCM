@@ -9,21 +9,21 @@ module.exports.emails = function(order,startLes) {
     <br>
     INVOICE PEMBAYARAN
     <br>
-    Nama Pemesan : ${order.customerName}
+    Nama Pemesan: ${order.customerName}
     <br>
-    Lokasi Mengajar : ${order.detailLocation}
+    Lokasi Mengajar: ${order.detailLocation}
     <br>
-    Jenis Les : ${order.title}
+    Jenis Les: ${order.title}
     <br>
-    Mulai Les : ${startLes}
+    Mulai Les: ${startLes}
     <br>
-    Jumlah Murid : ${order.totalSiswa}
+    Jumlah Murid: ${order.totalSiswa}
     <br>
-    Jumlah Pertemuan : ${order.totalPertemuan}
+    Jumlah Pertemuan: ${order.totalPertemuan}
     <br>
-    Biaya 1 murid : Rp. ${order.fee}
+    Biaya 1 murid: Rp. ${order.fee}
     <br>
-    Total Tagihan : Rp. ${order.total}
+    Total Tagihan: Rp. ${order.total}
     <br>
     <br/>
     Silahkan melakukan pembayaran maksimal 5 jam setelah invoice ini dikirim,<br> 
@@ -35,19 +35,19 @@ module.exports.emails = function(order,startLes) {
           <p>${order.guruName}, Anda mendapat pesanan mengajar<br>
           <br>
           <br>
-          No Pesanan : ${order.oid} 
+          No Pesanan: ${order.oid} 
           <br>
-          Nama Pemesan : ${order.customerName} 
+          Nama Pemesan: ${order.customerName} 
           <br>
-          Lokasi Mengajar : ${order.detailLocation}
+          Lokasi Mengajar: ${order.detailLocation}
           <br>
-          Jenis Les : ${order.title} 
+          Jenis Les: ${order.title} 
           <br>
-          Mulai Les : ${startLes}
+          Mulai Les: ${startLes}
           <br>
-          Jumlah Pertemuan : ${order.totalPertemuan}
+          Jumlah Pertemuan: ${order.totalPertemuan}
           <br>
-          Jumlah Murid : ${order.totalSiswa}
+          Jumlah Murid: ${order.totalSiswa}
           <br>
           <br>
           Klik terima pesanan untuk menerima pesanan mengajar.
@@ -63,21 +63,21 @@ module.exports.emails = function(order,startLes) {
     <br>
     Pemesan telah melakukan pembayaran, silahkan mulai mengajar.
     <br>
-    Nama Pengajar : ${order.guruName} 
+    Nama Pengajar: ${order.guruName} 
     <br>
-    Nama Pemesan :  ${order.customerName} 
+    Nama Pemesan:  ${order.customerName} 
     <br>
-    Nomor Telepon : ${order.customerPhone}
+    Nomor Telepon: ${order.customerPhone}
     <br>
-    Lokasi Mengajar : ${order.detailLocation} 
+    Lokasi Mengajar: ${order.detailLocation} 
     <br>
-    Jenis Les : ${order.title} 
+    Jenis Les: ${order.title} 
     <br>
-    Mulai Les : ${startLes} 
+    Mulai Les: ${startLes} 
     <br>
-    Jumlah Murid :  ${order.totalSiswa}
+    Jumlah Murid:  ${order.totalSiswa}
     <br>
-    Jumlah Pertemuan :  ${order.totalPertemuan}
+    Jumlah Pertemuan:  ${order.totalPertemuan}
     
     <br>
     Silahkan menghubungi murid untuk memperkenalkan diri.<br/>`;
@@ -96,17 +96,17 @@ module.exports.emails = function(order,startLes) {
     <br>
     <br>
 
-    Nama Pemesan : ${order.customerName} 
+    Nama Pemesan: ${order.customerName} 
     <br>
-    Lokasi Mengajar : ${order.detailLocation}
+    Lokasi Mengajar: ${order.detailLocation}
     <br>
-    Jenis Les : ${order.title} 
+    Jenis Les: ${order.title} 
     <br>
-    Mulai Les : ${startLest}
+    Mulai Les: ${startLest}
     <br>
-    Jumlah Pertemuan : ${order.totalPertemuan}
+    Jumlah Pertemuan: ${order.totalPertemuan}
     <br>
-    Jumlah Murid : ${order.totalSiswa}
+    Jumlah Murid: ${order.totalSiswa}
     <br>
     <br>`;
 
@@ -117,19 +117,19 @@ module.exports.emails = function(order,startLes) {
           <p>${order.guruName}, Anda mendapat pesanan mengajar<br>
           <br>
           <br>
-          No Pesanan : ${order.oid} 
+          No Pesanan: ${order.oid} 
           <br>
-          Nama Pemesan : ${order.customerName} 
+          Nama Pemesan: ${order.customerName} 
           <br>
-          Lokasi Mengajar : ${order.detailLocation}
+          Lokasi Mengajar: ${order.detailLocation}
           <br>
-          Jenis Les : ${order.title} 
+          Jenis Les: ${order.title} 
           <br>
-          Mulai Les : ${startLes}
+          Mulai Les: ${startLes}
           <br>
-          Sisa Pertemuan : ${order.totalPertemuan}
+          Sisa Pertemuan: ${order.totalPertemuan}
           <br>
-          Jumlah Murid : ${order.totalSiswa}
+          Jumlah Murid: ${order.totalSiswa}
           <br>
           <br>
           Klik terima pesanan untuk menerima pesanan mengajar.
@@ -145,17 +145,17 @@ module.exports.emails = function(order,startLes) {
     <br>
     Detail Pengajar
     <br>
-    Nama Pengajar : ${order.guruName}
+    Nama Pengajar: ${order.guruName}
     <br>
-    Alamat Pengajar : ${order.guruAddres}
+    Alamat Pengajar: ${order.guruAddres}
     <br>
-    No. HP : ${order.guruPhone}
+    No. HP: ${order.guruPhone}
     <br>
-    Mulai Les : ${startLes}
+    Mulai Les: ${startLes}
     <br>
-    Jumlah Murid : ${order.totalSiswa}
+    Jumlah Murid: ${order.totalSiswa}
     <br>
-    Sisa Pertemuan : ${order.totalPertemuan}
+    Sisa Pertemuan: ${order.totalPertemuan}
     <br>
     
     <br/>
@@ -1052,17 +1052,17 @@ module.exports.emailuser = function(user) {
           
                 <p>Silahkan buat profil, tarif, dan fasilitas ajar anda semenarik mungkin agar murid memilih anda sebagai pengajar.
                 <br>
-                Detail akun anda sebagai berikut :<br>
+                Detail akun anda sebagai berikut:<br>
                 <br>
-                Nama    : ${user.full_name}
+                Nama: ${user.full_name}
                 <br>
-                Alamat  : ${user.fullAddress}
+                Alamat: ${user.fullAddress}
                 <br>
-                No telp : ${user.phone}
+                No telp: ${user.phone}
                 <br>
-                Email   : ${user.email}
+                Email: ${user.email}
                 <br>
-                Pendidikan : ${user.pendidikan}
+                Pendidikan: ${user.pendidikan}
                 
                 
                 <br>`;
