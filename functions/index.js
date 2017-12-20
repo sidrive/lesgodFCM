@@ -228,6 +228,32 @@ exports.recountSkill = functions.database.ref('users/{uid}/totalSkill').onWrite(
 // Functions Push Notification Order
 ///
 //
+
+exports.changeGuruNotification = functions.database.ref('orders/{Oid}/statusGantiGuru').onWrite(event => {
+  const Oid = event.params.Oid;
+
+  let order, orders = [];
+      const oldItemsQuery = admin.database().ref('/orders/').orderByChild('oid').equalTo(Oid);
+      oldItemsQuery.once('value').then(snapshot => {
+        // create a map with all children that need to be removed
+        
+        snapshot.forEach((childSnapshot) => {
+          order = childSnapshot.val();
+          orders.push(order);
+        });
+        console.log(orders.length + " order retrieved");
+        console.log("Order title : "+order.title);
+        // Delete users then wipe the database
+
+        let promises = orders.map(order => sendNotification(order));
+        Promise.all(promises)
+            .catch( e => console.log(e.message) );
+        
+  });
+
+ });
+
+
    
 exports.sendOrderNotification = functions.database.ref('orders/{Oid}/status').onWrite(event => {
   const Oid = event.params.Oid;
@@ -422,52 +448,39 @@ function sendNotification(order) {
   sendMurid(order,titleMurid,bodyMurid);
   sendGuru(order,titleGuru,bodyGuru);
   
-} if (order.status == 'change_guru'){
+} if (order.statusGantiGuru == 'request'){
 
       const titleMurid = 'Lessgood : Penggantian Pengajar';
-      const titleGuru = 'Lessgood : Murid Ingin Mengganti Pengajar';
+      const titleGuru = 'Lessgood : Tawaran Mengajar';
       const bodyMurid = `Penawaran Penggantian Pengajar sedang dikirimkan, Silahkan tunggu konfirmasi pengajar`;
-      const bodyGuru  = `Maaf, murid melakukan penggantian pengajar. Sesi belajar anda telah berakhir. 
-                          silahkan melakukan evaluasi untuk meningkatkan kualitas mengajar anda.` || siswa.photoURL;
+      const bodyGuru  = `"${order.customerName}" ingin menjadi murid Anda. Silahkan konfirmasi paling lambat 1x24 jam` || siswa.photoURL;
 
     
   sendMurid(order,titleMurid,bodyMurid);
   sendGuru(order,titleGuru,bodyGuru);
   
+} if (order.statusGantiGuru == 'accept'){
+
+  const titleMurid = 'Lessgood : Penggantian Pengajar';
+  const titleGuru = 'Lessgood : Persiapan Mengajar';
+  const bodyMurid = `Pengajar pengganti telah setuju,Pengajar akan segera menghubungi anda`;
+  const bodyGuru  = `Silahkan menghubungi murid untuk memperkenalkan diri` || siswa.photoURL;
+
+
+sendMurid(order,titleMurid,bodyMurid);
+sendGuru(order,titleGuru,bodyGuru);
+
+} if (order.statusGantiGuru == 'decline'){
+
+  const titleMurid = 'Lessgood : Pengajar Membatalkan Pesanan';
+  const bodyMurid = `Mohon maaf pengajar atas Nama "${order.guruName}" berhalangan mengajar. Silahkan memilih pengajar lain.`;
+
+sendMurid(order,titleMurid,bodyMurid);
+
 }
 
 
-  function send(tokens,payload){
-    const options = {
-        priority: "high",
-        vibrate: [100, 50, 100],
-        timeToLive: 60 * 60 * 24,
-        actions: [
-          {action: 'explore', title: 'Explore this new world',
-            icon: 'images/checkmark.png'},
-          {action: 'close', title: 'Close notification',
-            icon: 'images/xmark.png'},
-        ]
-};
-  // Send notifications to all tokens.
-    return admin.messaging().sendToDevice(tokens, payload, options).then(response => {
-      // For each message check if there was an error.
-      const tokensToRemove = [];
-      response.results.forEach((result, index) => {
-        const error = result.error;
-        if (error) {
-          console.error('Failure sending notification to', tokens[index], error);
-          // Cleanup the tokens who are not registered anymore.
-          if (error.code === 'messaging/invalid-registration-token' ||
-              error.code === 'messaging/registration-token-not-registered') {
-            tokensToRemove.push(tokensSnapshot.ref.child(tokens[index]).remove());
-          }
-        }
-      });
-      return Promise.all(tokensToRemove);
-    });
-  }
-
+  
   function sendMurid(order,titleMurid,bodyMurid){
   // Get the list of device notification tokens.
     const getMuridTokensPromise = admin.database().ref(`users/${userID}/userTokens`).once('value');
@@ -533,6 +546,37 @@ function sendNotification(order) {
     
   });
   }
+
+  function send(tokens,payload){
+    const options = {
+        priority: "high",
+        vibrate: [100, 50, 100],
+        timeToLive: 60 * 60 * 24,
+        actions: [
+          {action: 'explore', title: 'Explore this new world',
+            icon: 'images/checkmark.png'},
+          {action: 'close', title: 'Close notification',
+            icon: 'images/xmark.png'},
+        ]
+};
+  // Send notifications to all tokens.
+    return admin.messaging().sendToDevice(tokens, payload, options).then(response => {
+      // For each message check if there was an error.
+      const tokensToRemove = [];
+      response.results.forEach((result, index) => {
+        const error = result.error;
+        if (error) {
+          console.error('Failure sending notification to', tokens[index], error);
+          // Cleanup the tokens who are not registered anymore.
+          if (error.code === 'messaging/invalid-registration-token' ||
+              error.code === 'messaging/registration-token-not-registered') {
+            tokensToRemove.push(tokensSnapshot.ref.child(tokens[index]).remove());
+          }
+        }
+      });
+      return Promise.all(tokensToRemove);
+    });
+  }
 }
 
 
@@ -540,6 +584,32 @@ function sendNotification(order) {
 //-------
 
 exports.sendEmailNotifications = functions.database.ref('orders/{Oid}/status').onWrite(event => {
+  
+    const Oid = event.params.Oid;
+  
+    let order, orders = [];
+        const oldItemsQuery = admin.database().ref('/orders/').orderByChild('oid').equalTo(Oid);
+        oldItemsQuery.once('value').then(snapshot => {
+          // create a map with all children that need to be removed
+          
+          snapshot.forEach((childSnapshot) => {
+            order = childSnapshot.val();
+            orders.push(order);
+          });
+          console.log(orders.length + " order retrieved");
+          console.log("Order title : "+order.title);
+          // Delete users then wipe the database
+  
+          let promises = orders.map(order => sendEmail(order));
+          Promise.all(promises)
+              .catch( e => console.log(e.message) );
+          
+    });
+   
+  });
+
+
+  exports.changeGuruEmailNotifications = functions.database.ref('orders/{Oid}/statusGantiGuru').onWrite(event => {
   
     const Oid = event.params.Oid;
   
@@ -601,7 +671,25 @@ exports.sendEmailNotifications = functions.database.ref('orders/{Oid}/status').o
     const pertemuanTime = getPertemuanTime(order.pertemuanTime);
     
    sendEmailGuru(emailGuru,guruSubyek,order,pertemuanTime);
-  }
+  } if (order.statusGantiGuru == "request"){
+    const emailGuru   = order.guruEmail;
+    const guruSubyek  = 'Penawaran Pengajar Pengganti';
+    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
+    
+   sendEmailGuru(emailGuru,guruSubyek,order,pertemuanTime);
+  } if (order.statusGantiGuru == "accept"){
+    const emailMurid  = order.customerEmail;
+    const subyek      = "Pesanan Berhasil!";
+    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
+
+    sendEmailMurid(emailMurid,subyek,order,pertemuanTime);
+  } if (order.statusGantiGuru == "decline"){
+    const emailMurid  = order.customerEmail;
+    const subyek      = "Pengajar Membatalkan Pesanan!";
+    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
+
+    sendEmailMurid(emailMurid,subyek,order,pertemuanTime);
+  } 
   console.log("Order Status : "+order.status);
    
 };

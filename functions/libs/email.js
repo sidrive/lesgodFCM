@@ -110,7 +110,7 @@ module.exports.emails = function(order,startLes) {
     <br>
     <br>`;
 
-  }if (order.status == 'change_guru'){
+  }if (order.statusGantiGuru == 'request'){
     var isi = `<p>[Lesgood Indonesia]
           <h1>Anda mendapat Pesanan sebagai Pengajar Pengganti</h1>
     
@@ -127,7 +127,7 @@ module.exports.emails = function(order,startLes) {
           <br>
           Mulai Les : ${startLes}
           <br>
-          Jumlah Pertemuan : ${order.totalPertemuan}
+          Sisa Pertemuan : ${order.totalPertemuan}
           <br>
           Jumlah Murid : ${order.totalSiswa}
           <br>
@@ -138,6 +138,36 @@ module.exports.emails = function(order,startLes) {
           <a href="https://h3tr4.app.goo.gl/tobR">
             <h3>Terima Pesanan</h3>
           </a>`;
+  } if (order.statusGantiGuru == 'accept'){
+    var isi = `<p>[Lesgood Indonesia]
+    <br>
+    Pengajar atas nama ${order.guruName} menyetujui permintaan mengajar anda.
+    <br>
+    Detail Pengajar
+    <br>
+    Nama Pengajar : ${order.guruName}
+    <br>
+    Alamat Pengajar : ${order.guruAddres}
+    <br>
+    No. HP : ${order.guruPhone}
+    <br>
+    Mulai Les : ${startLes}
+    <br>
+    Jumlah Murid : ${order.totalSiswa}
+    <br>
+    Sisa Pertemuan : ${order.totalPertemuan}
+    <br>
+    
+    <br/>
+    Silahkan tunggu pengajar akan menghubungi anda<br> 
+    Terimakasih.`;
+  } if (order.statusGantiGuru == 'decline'){
+    var isi = `<p>[Lesgood Indonesia]
+    <br>
+    MOHON MAAF
+    <br>
+    Pengajar yang anda pesan berhalangan untuk mengajar. <br> Silahkan memilih pengajar lain.
+    <br>`;
   }
   var templates = `<!doctype html>
   <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
