@@ -1,15 +1,15 @@
 
-module.exports.emails = function(order,startLes) {
+module.exports.emails = function(order,startLes,guru,siswa) {
 
         
   if (order.status == 'pending_murid'){
     var isi = `<p>[Lesgood Indonesia]
     <br>
-    Pengajar atas nama ${order.guruName} menyetujui permintaan mengajar anda.
+    Pengajar atas Nama "${guru.full_name}" menyetujui permintaan mengajar anda.
     <br>
     INVOICE PEMBAYARAN
     <br>
-    Nama Pemesan: ${order.customerName}
+    Nama Pemesan: ${siswa.full_name}
     <br>
     Lokasi Mengajar: ${order.detailLocation}
     <br>
@@ -32,12 +32,12 @@ module.exports.emails = function(order,startLes) {
     var isi = `<p>[Lesgood Indonesia]
           <h1>Pesanan Mengajar Baru</h1>
     
-          <p>${order.guruName}, Anda mendapat pesanan mengajar<br>
+          <p>${guru.full_name}, Anda mendapat pesanan mengajar<br>
           <br>
           <br>
           No Pesanan: ${order.oid} 
           <br>
-          Nama Pemesan: ${order.customerName} 
+          Nama Pemesan: ${siswa.full_name} 
           <br>
           Lokasi Mengajar: ${order.detailLocation}
           <br>
@@ -63,11 +63,11 @@ module.exports.emails = function(order,startLes) {
     <br>
     Pemesan telah melakukan pembayaran, silahkan mulai mengajar.
     <br>
-    Nama Pengajar: ${order.guruName} 
+    Nama Pengajar: ${guru.full_name} 
     <br>
-    Nama Pemesan:  ${order.customerName} 
+    Nama Pemesan:  ${siswa.full_name} 
     <br>
-    Nomor Telepon: ${order.customerPhone}
+    Nomor Telepon: ${siswa.phone}
     <br>
     Lokasi Mengajar: ${order.detailLocation} 
     <br>
@@ -96,7 +96,7 @@ module.exports.emails = function(order,startLes) {
     <br>
     <br>
 
-    Nama Pemesan: ${order.customerName} 
+    Nama Pemesan: ${siswa.full_name} 
     <br>
     Lokasi Mengajar: ${order.detailLocation}
     <br>
@@ -114,12 +114,12 @@ module.exports.emails = function(order,startLes) {
     var isi = `<p>[Lesgood Indonesia]
           <h1>Anda mendapat Pesanan sebagai Pengajar Pengganti</h1>
     
-          <p>${order.guruName}, Anda mendapat pesanan mengajar<br>
+          <p>${guru.full_name}, Anda mendapat pesanan mengajar<br>
           <br>
           <br>
           No Pesanan: ${order.oid} 
           <br>
-          Nama Pemesan: ${order.customerName} 
+          Nama Pemesan: ${siswa.full_name} 
           <br>
           Lokasi Mengajar: ${order.detailLocation}
           <br>
@@ -141,15 +141,15 @@ module.exports.emails = function(order,startLes) {
   } if (order.statusGantiGuru == 'accept'){
     var isi = `<p>[Lesgood Indonesia]
     <br>
-    Pengajar atas nama ${order.guruName} menyetujui permintaan mengajar anda.
+    Pengajar atas nama ${guru.full_name} menyetujui permintaan mengajar anda.
     <br>
     Detail Pengajar
     <br>
-    Nama Pengajar: ${order.guruName}
+    Nama Pengajar: ${guru.full_name}
     <br>
-    Alamat Pengajar: ${order.guruAddres}
+    Alamat Pengajar: ${guru.fullAddress}
     <br>
-    No. HP: ${order.guruPhone}
+    No. HP: ${guru.phone}
     <br>
     Mulai Les: ${startLes}
     <br>

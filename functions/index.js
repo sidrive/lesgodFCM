@@ -338,6 +338,7 @@ function sendNotification(order) {
   
   // Get the follower profile.
   const getGuruProfilePromise = admin.auth().getUser(guruID);
+  const getGuru = admin.database().ref(`users/${guruID}`);
 
   return Promise.all([getMuridTokensPromise, getGuruProfilePromise]).then(results => {
     const tokensSnapshot = results[0];
@@ -349,12 +350,13 @@ function sendNotification(order) {
     }
     console.log('There are', tokensSnapshot.numChildren(), 'tokens to send notifications to.');
     console.log('Fetched guru profile', guru);
+    
 
     // Notification details.
     const payload = {
       notification: {
         title: 'Lessgood : Pengajar bersedia Mengajar',
-        body: `${order.guruName} akan menjadi guru Anda. Silahkan melakukan pembayaran paling lambat 5 jam` || guru.photoURL,
+        body: `${guru.displayName} akan menjadi guru Anda. Silahkan melakukan pembayaran paling lambat 5 jam` || guru.photoURL,
         sound: `default`,
         icon: guru.photoURL
       }
@@ -390,7 +392,7 @@ function sendNotification(order) {
     const payload = {
       notification: {
         title: 'Lessgood : Pengajar Membatalkan Pesanan',
-        body: `Mohon maaf pengajar atas Nama ${order.guruName} berhalangan mengajar. Silahkan memilih pengajar lain.` || guru.photoURL,
+        body: `Mohon maaf pengajar atas Nama ${guru.displayName} berhalangan mengajar. Silahkan memilih pengajar lain.` || guru.photoURL,
         sound: `default`,
         icon: guru.photoURL
       }
@@ -441,7 +443,7 @@ function sendNotification(order) {
 
       const titleMurid = 'Lessgood : Pembayaran Berhasil!';
       const titleGuru = 'Lessgood : Persiapan Mengajar';
-      const bodyMurid = `Pengajar akan segera menghubungi anda. Nama Pengajar : ${order.guruName}.` || guru.photoURL;
+      const bodyMurid = `Pengajar akan segera menghubungi anda. Nama Pengajar : ${guru.displayName}.` || guru.photoURL;
       const bodyGuru  = `Murid telah menyelesaikan pembayaran. Silahkan menghubungi murid untuk memperkenalkan diri` || siswa.photoURL;
 
     
@@ -453,7 +455,7 @@ function sendNotification(order) {
       const titleMurid = 'Lessgood : Penggantian Pengajar';
       const titleGuru = 'Lessgood : Tawaran Mengajar';
       const bodyMurid = `Penawaran Penggantian Pengajar sedang dikirimkan, Silahkan tunggu konfirmasi pengajar`;
-      const bodyGuru  = `"${order.customerName}" ingin menjadi murid Anda. Silahkan konfirmasi paling lambat 1x24 jam` || siswa.photoURL;
+      const bodyGuru  = `"${siswa.displayName}" ingin menjadi murid Anda. Silahkan konfirmasi paling lambat 1x24 jam` || siswa.photoURL;
 
     
   sendMurid(order,titleMurid,bodyMurid);
@@ -473,7 +475,7 @@ sendGuru(order,titleGuru,bodyGuru);
 } if (order.statusGantiGuru == 'decline'){
 
   const titleMurid = 'Lessgood : Pengajar Membatalkan Pesanan';
-  const bodyMurid = `Mohon maaf pengajar atas Nama "${order.guruName}" berhalangan mengajar. Silahkan memilih pengajar lain.`;
+  const bodyMurid = `Mohon maaf pengajar atas Nama "${guru.displayName}" berhalangan mengajar. Silahkan memilih pengajar lain.`;
 
 sendMurid(order,titleMurid,bodyMurid);
 
@@ -599,12 +601,11 @@ exports.sendEmailNotifications = functions.database.ref('orders/{Oid}/status').o
           console.log(orders.length + " order retrieved");
           console.log("Order title : "+order.title);
           // Delete users then wipe the database
-  
-          let promises = orders.map(order => sendEmail(order));
+
+          let promises = orders.map(order => getGuru(order));
           Promise.all(promises)
               .catch( e => console.log(e.message) );
-          
-    });
+        });
    
   });
 
@@ -634,69 +635,99 @@ exports.sendEmailNotifications = functions.database.ref('orders/{Oid}/status').o
    
   });
 
+    function getGuru(order){
+        let guru, gurus = [];
+        const oldItemsQuery = admin.database().ref('/users/').orderByChild('uid').equalTo(order.gid);
+        oldItemsQuery.once('value').then(snapshot => {
+          // create a map with all children that need to be removed
+          
+          snapshot.forEach((childSnapshot) => {
+            guru = childSnapshot.val();
+            gurus.push(guru);
+          });
+          getSiswa(order,guru);
+        });
+    };
 
-  function sendEmail(order){
+    function getSiswa(order,guru){
+        let siswa, siswas = [];
+        const oldItemsQuery = admin.database().ref('/users/').orderByChild('uid').equalTo(order.uid);
+        oldItemsQuery.once('value').then(snapshot => {
+          // create a map with all children that need to be removed
+          
+          snapshot.forEach((childSnapshot) => {
+            siswa = childSnapshot.val();
+            siswas.push(siswa);
+          });
+          sendEmail(order,guru,siswa);
+        });
+    };
 
-  if (order.status == "pending_guru"){
-
-    const emailGuru   = order.guruEmail;
-    const guruSubyek  = 'Pesanan Mengajar Baru!';
-    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
+  function sendEmail(order,guru,siswa){
     
-   sendEmailGuru(emailGuru,guruSubyek,order,pertemuanTime);
+    console.log("guru : "+guru.full_name);
+    console.log("siswa : "+siswa.full_name);
+     
+              
+              if (order.status == "pending_guru"){
+        
+                const emailGuru   = guru.email;
+                const guruSubyek  = 'Pesanan Mengajar Baru!';
+                const pertemuanTime = getPertemuanTime(order.pertemuanTime);
+                sendEmailGuru(emailGuru,guruSubyek,order,pertemuanTime,guru,siswa);            
+              } if (order.status == "pending_murid"){
 
-  } if (order.status == "pending_murid"){
-
-    const emailMurid  = order.customerEmail;
-    const muridSubyek = 'Pesanan Mengajar!';
-    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
-    
-   sendEmailMurid(emailMurid,muridSubyek,order,pertemuanTime);
-
-  } if (order.status == "SUCCESS"){
-    const emailGuru   = order.guruEmail;
-    const subyek      = "Transaksi Sukses";
-    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
-
-    sendEmailGuru(emailGuru,subyek,order,pertemuanTime);
-  } if (order.status == "cancel_guru"){
-    const emailMurid  = order.customerEmail;
-    const subyek      = "Pembatalan Pesanan!";
-    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
-
-    sendEmailMurid(emailMurid,subyek,order,pertemuanTime);
-  } if (order.status == "cancel_murid"){
-    const emailGuru   = order.guruEmail;
-    const guruSubyek  = 'Pembatalan Pesanan!';
-    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
-    
-   sendEmailGuru(emailGuru,guruSubyek,order,pertemuanTime);
-  } if (order.statusGantiGuru == "request"){
-    const emailGuru   = order.guruEmail;
-    const guruSubyek  = 'Penawaran Pengajar Pengganti';
-    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
-    
-   sendEmailGuru(emailGuru,guruSubyek,order,pertemuanTime);
-  } if (order.statusGantiGuru == "accept"){
-    const emailMurid  = order.customerEmail;
-    const subyek      = "Pesanan Berhasil!";
-    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
-
-    sendEmailMurid(emailMurid,subyek,order,pertemuanTime);
-  } if (order.statusGantiGuru == "decline"){
-    const emailMurid  = order.customerEmail;
-    const subyek      = "Pengajar Membatalkan Pesanan!";
-    const pertemuanTime = getPertemuanTime(order.pertemuanTime);
-
-    sendEmailMurid(emailMurid,subyek,order,pertemuanTime);
-  } 
+                const emailMurid  = siswa.email;
+                const muridSubyek = 'Pesanan Mengajar!';
+                const pertemuanTime = getPertemuanTime(order.pertemuanTime);
+                
+               sendEmailMurid(emailMurid,muridSubyek,order,pertemuanTime,guru,siswa);
+            
+              } if (order.status == "SUCCESS"){
+                const emailGuru   = guru.email;
+                const subyek      = "Transaksi Sukses";
+                const pertemuanTime = getPertemuanTime(order.pertemuanTime);
+            
+                sendEmailGuru(emailGuru,subyek,order,pertemuanTime,guru,siswa);
+              } if (order.status == "cancel_guru"){
+                const emailMurid  = siswa.email;
+                const subyek      = "Pembatalan Pesanan!";
+                const pertemuanTime = getPertemuanTime(order.pertemuanTime);
+            
+                sendEmailMurid(emailMurid,subyek,order,pertemuanTime,guru,siswa);
+              } if (order.status == "cancel_murid"){
+                const emailGuru   = guru.email;
+                const guruSubyek  = 'Pembatalan Pesanan!';
+                const pertemuanTime = getPertemuanTime(order.pertemuanTime);
+                
+               sendEmailGuru(emailGuru,guruSubyek,order,pertemuanTime,guru,siswa);
+              } if (order.statusGantiGuru == "request"){
+                const emailGuru   = guru.email;
+                const guruSubyek  = 'Penawaran Pengajar Pengganti';
+                const pertemuanTime = getPertemuanTime(order.pertemuanTime);
+                
+               sendEmailGuru(emailGuru,guruSubyek,order,pertemuanTime,guru,siswa);
+              } if (order.statusGantiGuru == "accept"){
+                const emailMurid  = siswa.email;
+                const subyek      = "Pesanan Berhasil!";
+                const pertemuanTime = getPertemuanTime(order.pertemuanTime);
+            
+                sendEmailMurid(emailMurid,subyek,order,pertemuanTime,guru,siswa);
+              } if (order.statusGantiGuru == "decline"){
+                const emailMurid  = siswa.email;
+                const subyek      = "Pengajar Membatalkan Pesanan!";
+                const pertemuanTime = getPertemuanTime(order.pertemuanTime);
+            
+                sendEmailMurid(emailMurid,subyek,order,pertemuanTime,guru,siswa);
+              }
+  
   console.log("Order Status : "+order.status);
    
 };
 
 
 
-function sendEmailGuru(email,subyek,order,pertemuantime){
+function sendEmailGuru(email,subyek,order,pertemuantime,guru,siswa){
   
     const mailOptions = {
       from: '"Lesgood Admin." <noreply@lesgood.com>',
@@ -705,7 +736,7 @@ function sendEmailGuru(email,subyek,order,pertemuantime){
     
     // Building Email message.
     mailOptions.subject = subyek;
-    mailOptions.html = Email.emails(order,pertemuantime);
+    mailOptions.html = Email.emails(order,pertemuantime,guru,siswa);
     console.log("function sendEmailGuru running");
     console.log("Mulai Les :"+pertemuantime);
     
@@ -716,7 +747,7 @@ function sendEmailGuru(email,subyek,order,pertemuantime){
      
     }
   
-    function sendEmailMurid(email,subyek,order,pertemuantime){
+    function sendEmailMurid(email,subyek,order,pertemuantime,guru,siswa){
   
     const mailOptions = {
       from: '"Lesgood Admin." <noreply@lesgood.com>',
@@ -725,7 +756,7 @@ function sendEmailGuru(email,subyek,order,pertemuantime){
     
     // Building Email message.
     mailOptions.subject = subyek;
-    mailOptions.html = Email.emails(order,pertemuantime);
+    mailOptions.html = Email.emails(order,pertemuantime,guru,siswa);
     console.log("function sendEmailMurid running");
     console.log("Mulai Les :"+pertemuantime);
     
